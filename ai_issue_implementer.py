@@ -33,9 +33,18 @@ class AIIssueImplementer:
         return GitHubIssue(**issues[0])
     
     def create_branch(self, issue_number: int) -> str:
-        branch_name = f"issue-{issue_number}"
-        subprocess.run(['git', 'checkout', '-b', branch_name], check=True)
-        return branch_name
+        base_branch_name = f"issue-{issue_number}"
+        branch_name = base_branch_name
+        counter = 1
+        
+        while True:
+            try:
+                subprocess.run(['git', 'checkout', '-b', branch_name], check=True)
+                return branch_name
+            except subprocess.CalledProcessError:
+                # Branch already exists, try with suffix
+                branch_name = f"{base_branch_name}-{counter}"
+                counter += 1
     
     def make_placeholder_change(self, title: str) -> None:
         with open('placeholder_change.txt', 'w') as f:
