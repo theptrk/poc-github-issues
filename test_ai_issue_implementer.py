@@ -2,7 +2,6 @@
 import unittest
 from unittest import mock
 from unittest.mock import Mock, patch
-import subprocess
 from schemas import GitHubIssue, GitHubPullRequest
 from ai_issue_implementer import AIIssueImplementer
 
@@ -40,17 +39,15 @@ class TestAIIssueImplementer(unittest.TestCase):
         self.assertEqual(result.number, 123)
         self.assertEqual(result.body, 'Please implement feature X that does Y')
     
-    @patch('subprocess.run')
-    def test_create_branch_returns_branch_name(self, mock_run):
+    @patch('ai_issue_implementer.GitUtils.create_unique_branch')
+    def test_create_branch_returns_branch_name(self, mock_create_unique):
+        mock_create_unique.return_value = 'issue-123'
+        
         implementer = AIIssueImplementer(self.config)
         result = implementer.create_branch(123)
         
         self.assertEqual(result, 'issue-123')
-        expected_calls = [
-            mock.call(['git', 'checkout', 'main'], check=True),
-            mock.call(['git', 'checkout', '-b', 'issue-123'], check=True)
-        ]
-        mock_run.assert_has_calls(expected_calls)
+        mock_create_unique.assert_called_once_with('issue-123')
     
     @patch('builtins.open')
     def test_make_placeholder_change_creates_file(self, mock_open):
@@ -63,23 +60,21 @@ class TestAIIssueImplementer(unittest.TestCase):
         mock_open.assert_called_once_with('placeholder_change.txt', 'w')
         mock_file.write.assert_called_once_with('Placeholder change for: Fix bug X')
     
-    @patch('subprocess.run')
-    def test_commit_changes_runs_git_commands(self, mock_run):
+    @patch('ai_issue_implementer.GitUtils.commit')
+    @patch('ai_issue_implementer.GitUtils.add_all')
+    def test_commit_changes_calls_git_utils(self, mock_add_all, mock_commit):
         implementer = AIIssueImplementer(self.config)
         implementer.commit_changes('Fix bug X')
         
-        expected_calls = [
-            mock.call(['git', 'add', '.'], check=True),
-            mock.call(['git', 'commit', '-m', 'Fix bug X'], check=True)
-        ]
-        mock_run.assert_has_calls(expected_calls)
+        mock_add_all.assert_called_once()
+        mock_commit.assert_called_once_with('Fix bug X')
     
-    @patch('subprocess.run')
-    def test_push_branch_runs_git_push(self, mock_run):
+    @patch('ai_issue_implementer.GitUtils.push_branch')
+    def test_push_branch_calls_git_utils(self, mock_push):
         implementer = AIIssueImplementer(self.config)
         implementer.push_branch('issue-123')
         
-        mock_run.assert_called_once_with(['git', 'push', 'origin', 'issue-123'], check=True)
+        mock_push.assert_called_once_with('issue-123')
     
     @patch('ai_issue_implementer.requests.post')
     def test_create_placeholder_pull_request_returns_github_pr_schema(self, mock_post):
