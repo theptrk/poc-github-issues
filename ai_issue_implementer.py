@@ -33,6 +33,9 @@ class AIIssueImplementer:
         return GitHubIssue(**issues[0])
     
     def create_branch(self, issue_number: int) -> str:
+        # First, make sure we're on main
+        subprocess.run(['git', 'checkout', 'main'], check=True)
+        
         base_branch_name = f"issue-{issue_number}"
         branch_name = base_branch_name
         counter = 1
