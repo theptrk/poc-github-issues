@@ -110,6 +110,13 @@ class AIIssueImplementer:
         except Exception as e:
             print(f"Error in workflow: {e}")
             return None
+        finally:
+            # Always return to main branch
+            try:
+                subprocess.run(['git', 'checkout', 'main'], check=True)
+                print("Returned to main branch")
+            except subprocess.CalledProcessError:
+                print("Warning: Could not return to main branch")
 
 def main():
     import os
