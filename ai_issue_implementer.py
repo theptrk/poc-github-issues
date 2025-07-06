@@ -3,6 +3,7 @@ import requests
 import subprocess
 from typing import Optional
 from schemas import GitHubIssue, GitHubPullRequest
+from git_utils import GitUtils
 
 class AIIssueImplementer:
     def __init__(self, config):
@@ -33,32 +34,19 @@ class AIIssueImplementer:
         return GitHubIssue(**issues[0])
     
     def create_branch(self, issue_number: int) -> str:
-        # First, make sure we're on main
-        subprocess.run(['git', 'checkout', 'main'], check=True)
-        
         base_branch_name = f"issue-{issue_number}"
-        branch_name = base_branch_name
-        counter = 1
-        
-        while True:
-            try:
-                subprocess.run(['git', 'checkout', '-b', branch_name], check=True)
-                return branch_name
-            except subprocess.CalledProcessError:
-                # Branch already exists, try with suffix
-                branch_name = f"{base_branch_name}-{counter}"
-                counter += 1
+        return GitUtils.create_unique_branch(base_branch_name)
     
     def make_placeholder_change(self, title: str) -> None:
         with open('placeholder_change.txt', 'w') as f:
             f.write(f'Placeholder change for: {title}')
     
     def commit_changes(self, commit_message: str) -> None:
-        subprocess.run(['git', 'add', '.'], check=True)
-        subprocess.run(['git', 'commit', '-m', commit_message], check=True)
+        GitUtils.add_all()
+        GitUtils.commit(commit_message)
     
     def push_branch(self, branch_name: str) -> None:
-        subprocess.run(['git', 'push', 'origin', branch_name], check=True)
+        GitUtils.push_branch(branch_name)
     
     def create_placeholder_pull_request(self, branch_name: str, title: str) -> Optional[GitHubPullRequest]:
         url = f"https://api.github.com/repos/{self.owner}/{self.repo}/pulls"
@@ -113,7 +101,7 @@ class AIIssueImplementer:
         finally:
             # Always return to main branch
             try:
-                subprocess.run(['git', 'checkout', 'main'], check=True)
+                GitUtils.checkout_main()
                 print("Returned to main branch")
             except subprocess.CalledProcessError:
                 print("Warning: Could not return to main branch")
