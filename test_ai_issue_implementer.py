@@ -46,7 +46,11 @@ class TestAIIssueImplementer(unittest.TestCase):
         result = implementer.create_branch(123)
         
         self.assertEqual(result, 'issue-123')
-        mock_run.assert_called_once_with(['git', 'checkout', '-b', 'issue-123'], check=True)
+        expected_calls = [
+            mock.call(['git', 'checkout', 'main'], check=True),
+            mock.call(['git', 'checkout', '-b', 'issue-123'], check=True)
+        ]
+        mock_run.assert_has_calls(expected_calls)
     
     @patch('builtins.open')
     def test_make_placeholder_change_creates_file(self, mock_open):
