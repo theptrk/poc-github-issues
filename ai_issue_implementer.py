@@ -2,7 +2,7 @@
 import requests
 import subprocess
 from typing import Optional
-from schemas import GitHubIssue
+from schemas import GitHubIssue, GitHubPullRequest
 
 class AIIssueImplementer:
     def __init__(self, config):
@@ -48,7 +48,7 @@ class AIIssueImplementer:
     def push_branch(self, branch_name: str) -> None:
         subprocess.run(['git', 'push', 'origin', branch_name], check=True)
     
-    def create_placeholder_pull_request(self, branch_name: str, title: str) -> Optional[str]:
+    def create_placeholder_pull_request(self, branch_name: str, title: str) -> Optional[GitHubPullRequest]:
         url = f"https://api.github.com/repos/{self.owner}/{self.repo}/pulls"
         headers = {
             'Authorization': f'token {self.token}',
@@ -66,7 +66,38 @@ class AIIssueImplementer:
         response.raise_for_status()
         pr = response.json()
         
-        return pr['html_url']
+        return GitHubPullRequest(**pr)
+    
+    def create_full_pull_request_workflow(self, issue_number: int, issue_title: str) -> Optional[str]:
+        """Complete workflow: create branch, make changes, commit, push, and create PR"""
+        try:
+            # Create branch
+            branch_name = self.create_branch(issue_number)
+            print(f"Created branch: {branch_name}")
+            
+            # Make placeholder change
+            self.make_placeholder_change(issue_title)
+            print("Made placeholder change")
+            
+            # Commit changes
+            commit_message = f"AI Implementation: {issue_title}"
+            self.commit_changes(commit_message)
+            print("Committed changes")
+            
+            # Push branch
+            self.push_branch(branch_name)
+            print(f"Pushed branch: {branch_name}")
+            
+            # Create PR
+            pr_title = f"AI Implementation: {issue_title}"
+            pr = self.create_placeholder_pull_request(branch_name, pr_title)
+            print(f"Created PR: {pr.html_url}")
+            
+            return pr.html_url
+            
+        except Exception as e:
+            print(f"Error in workflow: {e}")
+            return None
 
 def main():
     import os
@@ -86,18 +117,16 @@ def main():
     
     implementer = AIIssueImplementer(config)
     
-    print("Testing branch creation...")
+    print("Testing full PR workflow...")
     try:
-        branch_name = implementer.create_branch(999)
-        print(f"Successfully created branch: {branch_name}")
+        # Test the complete workflow
+        pr_url = implementer.create_full_pull_request_workflow(888, "Test full workflow")
         
-        print("Making placeholder change...")
-        implementer.make_placeholder_change("Test issue")
-        print("Created placeholder_change.txt")
-        
-        print("Committing changes...")
-        implementer.commit_changes("Test commit for branch creation")
-        print("Changes committed successfully")
+        if pr_url:
+            print(f"✅ Full workflow completed successfully!")
+            print(f"Pull request created: {pr_url}")
+        else:
+            print("❌ Workflow failed")
         
     except subprocess.CalledProcessError as e:
         print(f"Git command failed: {e}")

@@ -16,3 +16,11 @@ class GitHubIssue(BaseModel):
     html_url: str
     updated_at: datetime
     labels: List[GitHubLabel] = []
+
+class GitHubPullRequest(BaseModel):
+    model_config = ConfigDict(extra='ignore')
+    
+    number: int
+    html_url: str
+    title: str
+    state: str
