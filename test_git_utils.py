@@ -58,6 +58,14 @@ class TestGitUtils(unittest.TestCase):
         mock_create.assert_any_call('issue-123-1') 
         mock_create.assert_any_call('issue-123-2')
         self.assertEqual(result, 'issue-123-2')
+    
+    @patch.object(GitUtils, 'commit')
+    @patch.object(GitUtils, 'add_all')
+    def test_commit_all_changes_calls_both_methods(self, mock_add_all, mock_commit):
+        GitUtils.commit_all_changes('Test commit')
+        
+        mock_add_all.assert_called_once()
+        mock_commit.assert_called_once_with('Test commit')
 
 if __name__ == '__main__':
     unittest.main()

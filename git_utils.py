@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import subprocess
-from typing import Optional
 
 class GitUtils:
     """Utility class for git operations"""
@@ -29,6 +28,12 @@ class GitUtils:
     def push_branch(branch_name: str) -> None:
         """Push branch to origin"""
         subprocess.run(['git', 'push', 'origin', branch_name], check=True)
+    
+    @staticmethod
+    def commit_all_changes(message: str) -> None:
+        """Stage all changes and commit"""
+        GitUtils.add_all()
+        GitUtils.commit(message)
     
     @staticmethod
     def create_unique_branch(base_name: str) -> str:
